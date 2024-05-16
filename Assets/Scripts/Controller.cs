@@ -296,6 +296,21 @@ public class Controller : MonoBehaviour
             foreach (int tileIndex in current.adjacency)
             {
                 Tile tile = tiles[tileIndex];
+                // Si es el turno del policía, no agregamos a la cola la casilla ocupada por el otro policía
+                if (cop)
+                {
+                    bool occupiedByOtherCop = false;
+                    foreach (GameObject otherCop in cops)
+                    {
+                        if (otherCop != cops[clickedCop] && tile == tiles[otherCop.GetComponent<CopMove>().currentTile])
+                        {
+                            occupiedByOtherCop = true;
+                            break;
+                        }
+                    }
+                    if (occupiedByOtherCop)
+                        continue;
+                }
                 if (!tile.visited && current.depth < 3) // Solo continuamos la búsqueda si la profundidad es menor a 3
                 {
                     tile.parent = current;

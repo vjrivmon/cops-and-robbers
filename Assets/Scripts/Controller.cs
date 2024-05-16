@@ -260,6 +260,7 @@ public void FindSelectableTiles(bool cop)
 
     //Implementar BFS. Los nodos seleccionables los ponemos como selectable=true
     nodes.Enqueue(tiles[indexcurrentTile]);
+    tiles[indexcurrentTile].depth = 1; // Añadimos una profundidad inicial a la casilla actual
     while (nodes.Count > 0)
     {
         Tile current = nodes.Dequeue();
@@ -267,10 +268,11 @@ public void FindSelectableTiles(bool cop)
         foreach (int tileIndex in current.adjacency)
         {
             Tile tile = tiles[tileIndex];
-            if (!tile.visited)
+            if (!tile.visited && current.depth < 3) // Solo continuamos la búsqueda si la profundidad es menor a 3
             {
                 tile.parent = current;
                 tile.selectable = true;
+                tile.depth = current.depth + 1; // Incrementamos la profundidad para la siguiente casilla
                 nodes.Enqueue(tile);
             }
         }

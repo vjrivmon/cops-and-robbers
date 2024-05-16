@@ -159,51 +159,79 @@ public class Controller : MonoBehaviour
         }
 
     }
-
-public void RobberTurn()
-{
-    clickedTile = robber.GetComponent<RobberMove>().currentTile;
-    tiles[clickedTile].current = true;
-    FindSelectableTiles(false);
-
-    // Elegimos una casilla aleatoria entre las seleccionables que puede ir el caco
-    List<Tile> selectableTiles = new List<Tile>();
-    foreach (Tile tile in tiles)
+    public int CalculateDistance(Tile tile1, Tile tile2)
     {
-        if (tile.selectable)
+        int size = 8; // Tamaño del tablero (8x8)
+    
+        int x1 = tile1.numTile % size;
+        int y1 = tile1.numTile / size;
+    
+        int x2 = tile2.numTile % size;
+        int y2 = tile2.numTile / size;
+    
+        return Mathf.Abs(x1 - x2) + Mathf.Abs(y1 - y2);
+    }
+    public void RobberTurn()
+    {
+        clickedTile = robber.GetComponent<RobberMove>().currentTile;
+        tiles[clickedTile].current = true;
+        FindSelectableTiles(false);
+
+        // Elegimos la casilla más lejana de cualquier policía entre las seleccionables
+        Tile farthestTile = null;
+        int maxDistance = -1;
+        foreach (Tile tile in tiles)
         {
-            selectableTiles.Add(tile);
+            if (tile.selectable)
+            {
+                // Calculamos la distancia mínima a cualquier policía
+                int minDistance = int.MaxValue;
+                foreach (GameObject cop in cops)
+                {
+                    Tile copTile = tiles[cop.GetComponent<CopMove>().currentTile];
+                    int distance = CalculateDistance(tile, copTile);
+                    if (distance < minDistance)
+                    {
+                        minDistance = distance;
+                    }
+                }
+
+                // Si la distancia mínima es mayor que la máxima distancia actual, actualizamos la casilla más lejana y la máxima distancia
+                if (minDistance > maxDistance)
+                {
+                    farthestTile = tile;
+                    maxDistance = minDistance;
+                }
+            }
+        }
+
+        // Movemos al ladrón a la casilla más lejana
+        if (farthestTile != null)
+        {
+            robber.GetComponent<RobberMove>().MoveToTile(farthestTile);
+            robber.GetComponent<RobberMove>().currentTile = farthestTile.numTile;
         }
     }
-    Tile selectedTile = selectableTiles[Random.Range(0, selectableTiles.Count)];
-
-    // Movemos al caco a esa casilla
-    robber.GetComponent<RobberMove>().MoveToTile(selectedTile);
-    //robber.GetComponent<RobberMove>().MoveToTile(selectedTile.numTile);
-
-    // Actualizamos la variable currentTile del caco a la nueva casilla
-    robber.GetComponent<RobberMove>().currentTile = selectedTile.numTile;
-}
 
     /*public void RobberTurn()
-{
-    clickedTile = robber.GetComponent<RobberMove>().currentTile;
-    tiles[clickedTile].current = true;
-    List<Tile> selectableTiles = FindSelectableTiles(false);
-
-    if (selectableTiles.Count > 0)
     {
-        // Elegimos una casilla aleatoria entre las seleccionables
-        int randomIndex = Random.Range(0, selectableTiles.Count);
-        Tile randomTile = selectableTiles[randomIndex];
+        clickedTile = robber.GetComponent<RobberMove>().currentTile;
+        tiles[clickedTile].current = true;
+        List<Tile> selectableTiles = FindSelectableTiles(false);
 
-        // Movemos al caco a esa casilla
-        robber.GetComponent<RobberMove>().MoveToTile(randomTile);
+        if (selectableTiles.Count > 0)
+        {
+            // Elegimos una casilla aleatoria entre las seleccionables
+            int randomIndex = Random.Range(0, selectableTiles.Count);
+            Tile randomTile = selectableTiles[randomIndex];
 
-        // Actualizamos la variable currentTile del caco a la nueva casilla
-        robber.GetComponent<RobberMove>().currentTile = randomTile.index;
-    }
-}*/
+            // Movemos al caco a esa casilla
+            robber.GetComponent<RobberMove>().MoveToTile(randomTile);
+
+            // Actualizamos la variable currentTile del caco a la nueva casilla
+            robber.GetComponent<RobberMove>().currentTile = randomTile.index;
+        }
+    }*/
 
     public void EndGame(bool end)
     {
@@ -215,21 +243,21 @@ public void RobberTurn()
         state = Constants.End;
     }
 
-public void PlayAgain()
-{
-    cops[0].GetComponent<CopMove>().Restart(tiles[Constants.InitialCop0]);
-    cops[1].GetComponent<CopMove>().Restart(tiles[Constants.InitialCop1]);
-    robber.GetComponent<RobberMove>().Restart(tiles[Constants.InitialRobber]);
-            
-    ResetTiles();
+    public void PlayAgain()
+    {
+        cops[0].GetComponent<CopMove>().Restart(tiles[Constants.InitialCop0]);
+        cops[1].GetComponent<CopMove>().Restart(tiles[Constants.InitialCop1]);
+        robber.GetComponent<RobberMove>().Restart(tiles[Constants.InitialRobber]);
+                
+        ResetTiles();
 
-    playAgainButton.interactable = false;
-    finalMessage.text = "";
-    roundCount = 0;
-    rounds.text = "Rounds: ";
+        playAgainButton.interactable = false;
+        finalMessage.text = "";
+        roundCount = 0;
+        rounds.text = "Rounds: ";
 
-    state = Constants.Restarting;
-}
+        state = Constants.Restarting;
+    }
 
 
     public void InitGame()
@@ -243,40 +271,40 @@ public void PlayAgain()
         roundCount++;
         rounds.text = "Rounds: " + roundCount;
     }
-public void FindSelectableTiles(bool cop)
-{
-    int indexcurrentTile;
-
-    if (cop == true)
-        indexcurrentTile = cops[clickedCop].GetComponent<CopMove>().currentTile;
-    else
-        indexcurrentTile = robber.GetComponent<RobberMove>().currentTile;
-
-    //La ponemos rosa porque acabamos de hacer un reset
-    tiles[indexcurrentTile].current = true;
-
-    //Cola para el BFS
-    Queue<Tile> nodes = new Queue<Tile>();
-
-    //Implementar BFS. Los nodos seleccionables los ponemos como selectable=true
-    nodes.Enqueue(tiles[indexcurrentTile]);
-    tiles[indexcurrentTile].depth = 1; // Añadimos una profundidad inicial a la casilla actual
-    while (nodes.Count > 0)
+    public void FindSelectableTiles(bool cop)
     {
-        Tile current = nodes.Dequeue();
-        current.visited = true;
-        foreach (int tileIndex in current.adjacency)
+        int indexcurrentTile;
+
+        if (cop == true)
+            indexcurrentTile = cops[clickedCop].GetComponent<CopMove>().currentTile;
+        else
+            indexcurrentTile = robber.GetComponent<RobberMove>().currentTile;
+
+        //La ponemos rosa porque acabamos de hacer un reset
+        tiles[indexcurrentTile].current = true;
+
+        //Cola para el BFS
+        Queue<Tile> nodes = new Queue<Tile>();
+
+        //Implementar BFS. Los nodos seleccionables los ponemos como selectable=true
+        nodes.Enqueue(tiles[indexcurrentTile]);
+        tiles[indexcurrentTile].depth = 1; // Añadimos una profundidad inicial a la casilla actual
+        while (nodes.Count > 0)
         {
-            Tile tile = tiles[tileIndex];
-            if (!tile.visited && current.depth < 3) // Solo continuamos la búsqueda si la profundidad es menor a 3
+            Tile current = nodes.Dequeue();
+            current.visited = true;
+            foreach (int tileIndex in current.adjacency)
             {
-                tile.parent = current;
-                tile.selectable = true;
-                tile.depth = current.depth + 1; // Incrementamos la profundidad para la siguiente casilla
-                nodes.Enqueue(tile);
+                Tile tile = tiles[tileIndex];
+                if (!tile.visited && current.depth < 3) // Solo continuamos la búsqueda si la profundidad es menor a 3
+                {
+                    tile.parent = current;
+                    tile.selectable = true;
+                    tile.depth = current.depth + 1; // Incrementamos la profundidad para la siguiente casilla
+                    nodes.Enqueue(tile);
+                }
             }
         }
     }
-}
 }
 

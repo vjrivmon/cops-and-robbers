@@ -15,6 +15,8 @@ public class Tile : MonoBehaviour
     public bool visited = false;
     public Tile parent = null;//Casilla a través de la que llegamos
     public int distance = 0;//Distancia del original
+
+    public int depth;
         
     private void Awake()
     {     
@@ -55,6 +57,8 @@ public class Tile : MonoBehaviour
         visited = false;
         parent = null;
         distance = 0;
+
+        depth = 0;
     }
  
 }
